@@ -82,11 +82,49 @@ mostrar_tarjeta(col2, "2. Separadora", L_separadora, reductor_2, v2)
 mostrar_tarjeta(col3, "3. Checkweigher", L_balanza, reductor_3, v3, tipo="success")
 mostrar_tarjeta(col4, "4. Salida", L_salida, reductor_4, v4)
 
-st.markdown("### Estado del Sistema")
-if v3 < v2:
-    st.error("🛑 **ERROR DE DISEÑO:** La Balanza (CW) es más lenta que la Separadora.")
+# ==========================================
+# 🧠 CÁLCULO AVANZADO DE SOLAPAMIENTO
+# ==========================================
+st.markdown("### Estado del Sistema (Análisis de Solapamiento)")
+
+# 1. ¿Cada cuánto tiempo entra una bolsa al sistema? (Cadencia)
+# Usamos v1 porque es la velocidad que marca el ritmo de alimentación
+pitch_entrada = largo_bolsa_m + distancia_entre_bolsas_m
+if v1 > 0:
+    t_ritmo_llegada = pitch_entrada / v1
 else:
-    st.success("✅ **DISEÑO CORRECTO:** La Balanza es más rápida.")
+    t_ritmo_llegada = 0
+
+# 2. ¿Cuánto tiempo está la balanza "ocupada" por una sola bolsa?
+# La ocupación empieza cuando la "punta" entra y termina cuando la "cola" sale.
+distancia_a_recorrer = L_balanza + largo_bolsa_m
+if v3 > 0:
+    t_ocupacion_cw = distancia_a_recorrer / v3
+else:
+    t_ocupacion_cw = 9999 # Si la balanza está quieta, el tiempo es infinito
+
+# Mostramos los datos calculados para que entiendas qué pasa
+col_state1, col_state2 = st.columns(2)
+col_state1.metric("⏱️ Ritmo de Llegada", f"1 bolsa cada {t_ritmo_llegada:.2f} s")
+col_state2.metric("⚖️ Tiempo de Paso por CW", f"{t_ocupacion_cw:.2f} s")
+
+# 3. COMPARACIÓN FINAL
+if t_ocupacion_cw >= t_ritmo_llegada:
+    diferencia = t_ocupacion_cw - t_ritmo_llegada
+    st.error(
+        f"🛑 **ERROR CRÍTICO: SOLAPAMIENTO.**\n\n"
+        f"Las bolsas llegan cada **{t_ritmo_llegada:.2f}s**, pero tardan **{t_ocupacion_cw:.2f}s** en cruzar la balanza.\n\n"
+        f"👉 Habrá **dos bolsas al mismo tiempo** sobre el Checkweigher (por {diferencia:.2f} segundos)."
+    )
+    color_estado = "red" # Variable para usar en la animación si quieres
+else:
+    margen_libre = t_ritmo_llegada - t_ocupacion_cw
+    st.success(
+        f"✅ **DISEÑO CORRECTO: PESADO INDIVIDUAL GARANTIZADO.**\n\n"
+        f"La balanza queda totalmente vacía durante **{margen_libre:.2f} segundos** "
+        f"antes de que llegue la siguiente bolsa."
+    )
+    color_estado = "green"
 
 # ==========================================
 # 🎬 GENERACIÓN DE LA GRÁFICA (OPTIMIZADA)
@@ -189,4 +227,5 @@ if st.button('▶️ INICIAR SIMULACIÓN CW', use_container_width=True):
 
 else:
     st.info("👆 Ajusta los valores y dale al Play. (Máx recomendado: 40 segundos)")
+
 
