@@ -188,4 +188,5 @@ if st.button('▶️ INICIAR SIMULACIÓN CW', use_container_width=True):
         plt.close(fig) # Cierra la figura para liberar memoria RAM
 
 else:
-    st.info("👆 Ajusta los valores y dale al Play. (Máx recomendado: 40 segundos)
+    st.info("👆 Ajusta los valores y dale al Play. (Máx recomendado: 40 segundos)")
+
