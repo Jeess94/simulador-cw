@@ -89,11 +89,20 @@ else:
     st.success("✅ **DISEÑO CORRECTO:** La Balanza es más rápida.")
 
 # ==========================================
-# 🎬 GENERACIÓN DE LA GRÁFICA
+# 🎬 GENERACIÓN DE LA GRÁFICA (OPTIMIZADA)
 # ==========================================
 st.markdown("---")
 if st.button('▶️ INICIAR SIMULACIÓN CW', use_container_width=True):
-    with st.spinner('Procesando física...'):
+    
+    # Espacio para mensajes de estado
+    estado = st.empty()
+    barra_progreso = st.progress(0)
+    
+    with st.spinner('Calibrando física y generando animación...'):
+        
+        # 1. Configuración de Física más liviana
+        dt = 0.1  # AUMENTAMOS EL PASO (Antes 0.05). Calcula menos frames, carga más rápido.
+        total_frames = int(duracion_segundos / dt)
         
         # Geometría
         alto_bolsa_m = 0.25
@@ -135,7 +144,11 @@ if st.button('▶️ INICIAR SIMULACIÓN CW', use_container_width=True):
             texts.append(t)
 
         def update(frame):
-            dt = 0.05
+            # Actualizamos la barra de progreso visualmente cada 10 frames para no frenar el cálculo
+            if frame % 10 == 0:
+                progreso = min(frame / total_frames, 1.0)
+                barra_progreso.progress(progreso)
+            
             for i, b in enumerate(bolsas):
                 c = b['x'] + largo_bolsa_m/2
                 
@@ -160,13 +173,19 @@ if st.button('▶️ INICIAR SIMULACIÓN CW', use_container_width=True):
                     rects[i].set_facecolor('peru')
             return rects + texts
 
-        # AQUÍ ESTÁ EL CÁLCULO MÁGICO PARA QUE DURE LO QUE PIDAS
-        # Calculamos cuántos frames necesitamos según los segundos que elegiste
-        dt = 0.05 
-        total_frames = int(duracion_segundos / dt)
-
-        ani = animation.FuncAnimation(fig, update, frames=total_frames, interval=30, blit=False)
-        components.html(ani.to_jshtml(), height=400)
+        # Generamos la animación
+        # interval=100 significa 100ms entre cuadros (ya que aumentamos el dt, aumentamos el intervalo para que se vea velocidad real)
+        ani = animation.FuncAnimation(fig, update, frames=total_frames, interval=100, blit=False)
+        
+        estado.info("Renderizando video... (esto es lo más pesado, espera un momento)")
+        html_video = ani.to_jshtml()
+        
+        # Limpieza
+        barra_progreso.empty()
+        estado.empty()
+        
+        components.html(html_video, height=400)
+        plt.close(fig) # Cierra la figura para liberar memoria RAM
 
 else:
-    st.info("👆 Ajusta los valores en el menú y presiona el botón para ver la animación.")
+    st.info("👆 Ajusta los valores y dale al Play. (Máx recomendado: 40 segundos)
